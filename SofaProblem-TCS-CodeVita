@@ -1,0 +1,128 @@
+#include<iostream>
+#include<vector>
+#include<string>
+#include<queue>
+using namespace std;
+
+struct SofaState{
+	int r, c;
+	int orient;
+	int steps;
+};
+
+bool isValidCell(int r, int c, int R, int C, const vector<string>& grid){
+	return (r >= 0 && r < R && c >= 0 && c < C && grid[r][c] != 'H');
+}
+
+bool isValidState(int row, int col, int orientation, int N, int M, const vector<string>& grid){
+	if(orientation == 0){
+		return isValidCell(row, col, N, M, grid) && isValidCell(row, col+1, N, M, grid);
+	}else{
+		return isValidCell(row, col, N, M, grid) && isValidCell(row+1, col, N, M, grid);
+	}
+}
+
+bool isClearForRotation(int r, int c, int N, int M, const vector<string>& grid){
+	for(int i = 0; i < 2; i++){
+		for(int j = 0; j < 2; j++){
+			if(!isValidCell(r+i, c+j, N, M, grid)){
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+int bfs(int st_r, int st_c, int st_orientation, int tg_r, int tg_c, int tg_orientation, int N, int M, const vector<string>& grid){
+	vector<vector<vector<bool>>> visited(N, vector<vector<bool>>(M, vector<bool>(2, false)));
+	queue<SofaState> q;
+	q.push({st_r, st_c, st_orientation, 0});
+	visited[st_r][st_c][st_orientation] = true;
+	
+	while(!q.empty()){
+		SofaState curr = q.front();
+		q.pop();
+		
+		const int dir[] = {0, 1, 0, -1, 0};
+	
+		if(curr.r == tg_r && curr.c == tg_c && curr.orient == tg_orientation){
+			return curr.steps;
+		}
+		
+		for(int i = 0; i < 4; i++){
+			int next_r = curr.r + dir[i];
+			int next_c = curr.c + dir[i+1];
+			if(isValidState(next_r, next_c, curr.orient, N, M, grid)){
+				if(!visited[next_r][next_c][curr.orient]){
+					visited[next_r][next_c][curr.orient] = true;
+					q.push({next_r, next_c, curr.orient, curr.steps + 1});
+				}
+			}
+		}
+		if(isClearForRotation(curr.r, curr.c, N, M, grid)){
+			int next_orient = (curr.orient == 0)? 1 : 0;
+			if(!visited[curr.r][curr.c][next_orient]){
+				visited[curr.r][curr.c][next_orient] = true;
+				q.push({curr.r, curr.c, next_orient, curr.steps+1});
+			}
+		}
+	}
+	return -1;
+}
+
+void solve(){
+	int N, M; cin >> N >> M;
+	vector<string> grid(N, string(M, ' '));
+	for(int i = 0; i < N; i++){
+		for(int j = 0; j < M; j++){
+			cin >> grid[i][j];
+		}
+	}
+	
+	int st_r = -1, st_c = -1, tg_r = -1, tg_c = -1;
+	int st_orientation = -1, tg_orientation = -1; 
+	
+	for(int i = 0; i < N; i++){
+		for(int j = 0; j < M; j++){
+			
+			if(grid[i][j] == 's' && st_r == -1){
+				st_r = i;
+				st_c = j;
+				if(j+1 < M && grid[i][j+1] == 's'){
+					st_orientation = 0; // Horizontal
+				}else if(i+1 < N && grid[i+1][j] == 's'){
+					st_orientation = 1; // Vertical
+				}
+			}
+			
+			if(grid[i][j] == 'S' && tg_r == -1){
+				tg_r = i;
+				tg_c = j;
+				if(j+1 < M && grid[i][j+1] == 'S'){
+					tg_orientation = 0; // Horizontal
+				}else if(i+1 < N && grid[i+1][j] == 'S'){
+					tg_orientation = 1; // Vertical
+				}
+			}
+		}
+	}
+	if (tg_r == -1) {
+        tg_r = st_r;
+        tg_c = st_c;
+        tg_orientation = st_orientation;
+    }
+
+	int ans = bfs(st_r, st_c, st_orientation, tg_r, tg_c, tg_orientation, N, M, grid);
+	if(ans == -1){
+		cout << "Impossible" << endl;
+	}else{
+		cout << ans << endl;
+	}
+}
+
+int main(){
+	ios::sync_with_stdio(false);
+	cin.tie(0);
+	solve();
+	return 0;
+}
